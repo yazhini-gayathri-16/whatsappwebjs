@@ -1,62 +1,102 @@
-const express = require('express');
-const whatsAppClient = require('@green-api/whatsapp-api-client');
-const path = require('path');
+// const { Client, LocalAuth } = require('whatsapp-web.js');
+// const qrcode = require('qrcode-terminal');
+// const express = require('express');
+// const port = process.env.PORT || 3000;
 
-const app = express();
-const port = 3000;
+// const app = express();
 
-// Middleware to parse JSON bodies
-app.use(express.json());
-app.use(express.static(__dirname));
+// app.use(express.json());
+// app.use(express.urlencoded({extended: true}));
+// app.use(express.static(__dirname));
 
-// Replace with your GREEN API credentials
-const idInstance = '7105217263';
-const apiTokenInstance = 'e9897cac52f64553bb62434c7ab4f304de7a915f81994be383';
+// // Initialize the WhatsApp client with local authentication
+// const client = new Client({
+//     authStrategy: new LocalAuth()
+// });
 
-// Initialize the REST API client
-const restAPI = whatsAppClient.restAPI({
-  idInstance,
-  apiTokenInstance,
-});
+// // Generate and display the QR code for authentication
+// client.on('qr', (qr) => {
+//     console.log('Scan the QR code below to authenticate:');
+//     qrcode.generate(qr, { small: true });
+// });
 
-// Function to generate bill details
-function generateBillDetails(customerNumber) {
-    return {
-        customerId: customerNumber,
-        amount: '₹1,000',
-        dueDate: '2025-04-15',
-        billNumber: Math.floor(Math.random() * 1000000)
-    };
-}
+// // Confirm successful authentication
+// client.on('ready', () => {
+//     console.log('Client is ready!');
+// });
 
-// Serve the HTML file
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
+// // Handle authentication failure
+// client.on('auth_failure', msg => {
+//     console.error('Authentication failure:', msg);
+// });
 
-// API endpoint to send bill notification
-app.post('/send-notification', async (req, res) => {
-    const { phoneNumber } = req.body;
+// // Initialize the client
+// client.initialize();
 
-    if (!phoneNumber || phoneNumber.length < 10) {
-        return res.json({ success: false, message: 'Please enter a valid phone number' });
-    }
+// // Mock function to generate bill details
+// function generateBill(customerId) {
+//     return {
+//         customerId: customerId,
+//         amount: '₹1,000',
+//         dueDate: '2025-04-15'
+//     };
+// }
 
-    try {
-        const billDetails = generateBillDetails(phoneNumber);
-        const message = `Dear Customer,\n\nYour bill details:\nBill Number: ${billDetails.billNumber}\nAmount: ${billDetails.amount}\nDue Date: ${billDetails.dueDate}\n\nPlease make the payment before the due date.\nThank you!`;
+// // Function to send a WhatsApp message
+// async function sendBillNotification(customerNumber, billDetails) {
+//     const message = `Hida vanchaaa, your bill of ${billDetails.amount} is generated and is due by ${billDetails.dueDate}. Thank you.`;
+//     try {
+//         console.log(`Attempting to send message to ${customerNumber}`);
+//         const chat = await client.getChatById(`${customerNumber}@c.us`);
+//         console.log('Chat object obtained');
         
-        const chatId = `${phoneNumber}@c.us`;
-        const response = await restAPI.message.sendMessage(chatId, null, message);
-        console.log('Bill notification sent successfully:', response);
-        
-        res.json({ success: true, message: 'Bill notification sent successfully!' });
-    } catch (error) {
-        console.error('Error sending bill notification:', error);
-        res.json({ success: false, message: 'Failed to send bill notification' });
-    }
-});
+//         const result = await chat.sendMessage(message);
+//         console.log('Message sent:', result);
+//         return true;
+//     } catch (error) {
+//         console.error('Detailed error:', error);
+//         throw error; // Propagate the error with details
+//     }
+// }
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+// // New endpoint to handle notification requests
+// app.post('/send-notification', async (req, res) => {
+//     const { customerNumber } = req.body;
+    
+//     if (!customerNumber) {
+//         return res.json({ success: false, message: 'Customer number is required' });
+//     }
+
+//     console.log('Received request for number:', customerNumber);
+
+//     if (!client.info) {
+//         return res.json({ 
+//             success: false, 
+//             message: 'WhatsApp client not ready. Please ensure QR code is scanned.' 
+//         });
+//     }
+
+//     // Generate bill for the customer
+//     const billDetails = generateBill(customerNumber);
+    
+//     try {
+//         const success = await sendBillNotification(customerNumber, billDetails);
+//         if (success) {
+//             res.json({ success: true, message: `Notification sent successfully to ${customerNumber}` });
+//         } else {
+//             res.json({ success: false, message: 'Failed to send notification' });
+//         }
+//     } catch (error) {
+//         console.error('Error in send-notification endpoint:', error);
+//         res.json({ 
+//             success: false, 
+//             message: 'Error sending notification: ' + error.message,
+//             error: error.toString()
+//         });
+//     }
+// });
+
+
+// app.listen(port, () => {
+//     console.log(`Server is running on ${port}`);
+// });

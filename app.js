@@ -1,102 +1,62 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const express = require('express');
-const port = process.env.PORT || 3000;
+const whatsAppClient = require('@green-api/whatsapp-api-client');
+const path = require('path');
 
 const app = express();
+const port = 3000;
 
+// Middleware to parse JSON bodies
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
 app.use(express.static(__dirname));
 
-// Initialize the WhatsApp client with local authentication
-const client = new Client({
-    authStrategy: new LocalAuth()
+// Replace with your GREEN API credentials
+const idInstance = '7105217263';
+const apiTokenInstance = 'e9897cac52f64553bb62434c7ab4f304de7a915f81994be383';
+
+// Initialize the REST API client
+const restAPI = whatsAppClient.restAPI({
+  idInstance,
+  apiTokenInstance,
 });
 
-// Generate and display the QR code for authentication
-client.on('qr', (qr) => {
-    console.log('Scan the QR code below to authenticate:');
-    qrcode.generate(qr, { small: true });
-});
-
-// Confirm successful authentication
-client.on('ready', () => {
-    console.log('Client is ready!');
-});
-
-// Handle authentication failure
-client.on('auth_failure', msg => {
-    console.error('Authentication failure:', msg);
-});
-
-// Initialize the client
-client.initialize();
-
-// Mock function to generate bill details
-function generateBill(customerId) {
+// Function to generate bill details
+function generateBillDetails(customerNumber) {
     return {
-        customerId: customerId,
+        customerId: customerNumber,
         amount: '₹1,000',
-        dueDate: '2025-04-15'
+        dueDate: '2025-04-15',
+        billNumber: Math.floor(Math.random() * 1000000)
     };
 }
 
-// Function to send a WhatsApp message
-async function sendBillNotification(customerNumber, billDetails) {
-    const message = `Hida vanchaaa, your bill of ${billDetails.amount} is generated and is due by ${billDetails.dueDate}. Thank you.`;
-    try {
-        console.log(`Attempting to send message to ${customerNumber}`);
-        const chat = await client.getChatById(`${customerNumber}@c.us`);
-        console.log('Chat object obtained');
-        
-        const result = await chat.sendMessage(message);
-        console.log('Message sent:', result);
-        return true;
-    } catch (error) {
-        console.error('Detailed error:', error);
-        throw error; // Propagate the error with details
-    }
-}
+// Serve the HTML file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
-// New endpoint to handle notification requests
+// API endpoint to send bill notification
 app.post('/send-notification', async (req, res) => {
-    const { customerNumber } = req.body;
-    
-    if (!customerNumber) {
-        return res.json({ success: false, message: 'Customer number is required' });
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber || phoneNumber.length < 10) {
+        return res.json({ success: false, message: 'Please enter a valid phone number' });
     }
 
-    console.log('Received request for number:', customerNumber);
-
-    if (!client.info) {
-        return res.json({ 
-            success: false, 
-            message: 'WhatsApp client not ready. Please ensure QR code is scanned.' 
-        });
-    }
-
-    // Generate bill for the customer
-    const billDetails = generateBill(customerNumber);
-    
     try {
-        const success = await sendBillNotification(customerNumber, billDetails);
-        if (success) {
-            res.json({ success: true, message: `Notification sent successfully to ${customerNumber}` });
-        } else {
-            res.json({ success: false, message: 'Failed to send notification' });
-        }
+        const billDetails = generateBillDetails(phoneNumber);
+        const message = `Dear Customer,\n\nYour bill details:\nBill Number: ${billDetails.billNumber}\nAmount: ${billDetails.amount}\nDue Date: ${billDetails.dueDate}\n\nPlease make the payment before the due date.\nThank you!`;
+        
+        const chatId = `${phoneNumber}@c.us`;
+        const response = await restAPI.message.sendMessage(chatId, null, message);
+        console.log('Bill notification sent successfully:', response);
+        
+        res.json({ success: true, message: 'Bill notification sent successfully!' });
     } catch (error) {
-        console.error('Error in send-notification endpoint:', error);
-        res.json({ 
-            success: false, 
-            message: 'Error sending notification: ' + error.message,
-            error: error.toString()
-        });
+        console.error('Error sending bill notification:', error);
+        res.json({ success: false, message: 'Failed to send bill notification' });
     }
 });
 
-
 app.listen(port, () => {
-    console.log(`Server is running on ${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });
