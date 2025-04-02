@@ -46,18 +46,18 @@ function generateBill(customerId) {
 async function sendBillNotification(customerNumber, billDetails) {
     const message = `Hida vanchaaa, your bill of ${billDetails.amount} is generated and is due by ${billDetails.dueDate}. Thank you.`;
     try {
+        console.log(`Attempting to send message to ${customerNumber}`);
         const chat = await client.getChatById(`${customerNumber}@c.us`);
-        await chat.sendMessage(message);
+        console.log('Chat object obtained');
+        
+        const result = await chat.sendMessage(message);
+        console.log('Message sent:', result);
         return true;
     } catch (error) {
-        console.error(`Failed to send message to ${customerNumber}:`, error);
-        return false;
+        console.error('Detailed error:', error);
+        throw error; // Propagate the error with details
     }
 }
-
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + "/index.html");
-});
 
 // New endpoint to handle notification requests
 app.post('/send-notification', async (req, res) => {
@@ -65,6 +65,15 @@ app.post('/send-notification', async (req, res) => {
     
     if (!customerNumber) {
         return res.json({ success: false, message: 'Customer number is required' });
+    }
+
+    console.log('Received request for number:', customerNumber);
+
+    if (!client.info) {
+        return res.json({ 
+            success: false, 
+            message: 'WhatsApp client not ready. Please ensure QR code is scanned.' 
+        });
     }
 
     // Generate bill for the customer
@@ -78,9 +87,15 @@ app.post('/send-notification', async (req, res) => {
             res.json({ success: false, message: 'Failed to send notification' });
         }
     } catch (error) {
-        res.json({ success: false, message: 'Error sending notification' });
+        console.error('Error in send-notification endpoint:', error);
+        res.json({ 
+            success: false, 
+            message: 'Error sending notification: ' + error.message,
+            error: error.toString()
+        });
     }
 });
+
 
 app.listen(port, () => {
     console.log(`Server is running on ${port}`);

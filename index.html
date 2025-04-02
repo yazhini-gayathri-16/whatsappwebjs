@@ -3,70 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Bill Notification</title>
+    <title>Bill Notification Sender</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 500px;
-            margin: 50px auto;
-            padding: 20px;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 1rem;
         }
-        .input-group {
-            margin-bottom: 20px;
+        .form-group {
+            margin-bottom: 1rem;
         }
-        input {
-            padding: 8px;
-            width: 200px;
+        input, button {
+            padding: 0.5rem;
+            font-size: 1rem;
         }
-        button {
-            padding: 8px 16px;
-            background-color: #25D366;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        #status {
-            margin-top: 20px;
-            color: #666;
+        #statusMessage {
+            margin-top: 1rem;
+            padding: 0.5rem;
         }
     </style>
 </head>
 <body>
-    <h1>WhatsApp Bill Notification</h1>
-    <div class="input-group">
-        <label for="customerNumber">Customer Number (with country code):</label><br>
-        <input type="text" id="customerNumber" placeholder="e.g., 919025578462">
+    <h1>Send Bill Notification</h1>
+    <div class="form-group">
+        <label for="phoneNumber">Phone Number (with country code):</label>
+        <input type="text" id="phoneNumber" placeholder="e.g., 919025578462">
     </div>
-    <button onclick="sendNotification()">Send Bill Notification</button>
-    <div id="status"></div>
+    <button id="sendBillButton">Send Bill Notification</button>
+    <div id="statusMessage"></div>
 
     <script>
-        async function sendNotification() {
-            const customerNumber = document.getElementById('customerNumber').value;
-            const statusDiv = document.getElementById('status');
-            
-            if (!customerNumber) {
-                statusDiv.textContent = 'Please enter a customer number';
-                return;
-            }
+        document.addEventListener('DOMContentLoaded', () => {
+            const sendButton = document.getElementById('sendBillButton');
+            const phoneInput = document.getElementById('phoneNumber');
+            const statusMessage = document.getElementById('statusMessage');
 
-            statusDiv.textContent = 'Sending notification...';
-            
-            try {
-                const response = await fetch('/send-notification', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ customerNumber })
+            if (sendButton && phoneInput) {
+                sendButton.addEventListener('click', async () => {
+                    const phoneNumber = phoneInput.value.trim();
+                    
+                    // Disable button while sending
+                    sendButton.disabled = true;
+                    statusMessage.textContent = 'Sending bill notification...';
+
+                    try {
+                        const response = await fetch('/send-notification', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ phoneNumber })
+                        });
+                        
+                        const result = await response.json();
+                        statusMessage.textContent = result.message;
+                    } catch (error) {
+                        statusMessage.textContent = 'Error sending notification: ' + error.message;
+                    } finally {
+                        sendButton.disabled = false;
+                    }
                 });
-                
-                const result = await response.json();
-                statusDiv.textContent = result.message;
-            } catch (error) {
-                statusDiv.textContent = 'Error sending notification';
             }
-        }
+        });
     </script>
 </body>
 </html>
