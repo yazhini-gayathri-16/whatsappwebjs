@@ -1,3 +1,4 @@
+
 const express = require('express');
 const whatsAppClient = require('@green-api/whatsapp-api-client');
 const path = require('path');
@@ -60,3 +61,5 @@ app.post('/send-notification', async (req, res) => {
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
+
+
